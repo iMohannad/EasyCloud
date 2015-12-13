@@ -105,6 +105,19 @@ def add_cobbler():
 		for line in newlines:
 			f.write(line)
 
+	with open('ansible/settings', 'r') as f:
+		newlines = []
+		for line in f.readlines():
+			if 'next_server: ' in line:
+				newlines.append('next_server: ' + ipcobbler +'\n')
+			elif 'server: 0.0.0.0' in line:
+				newlines.append('server: ' + ipcobbler +'\n')
+			else:
+				newlines.append(line)
+	with open('ansible/settings', 'w') as f:
+		for line in newlines:
+			f.write(line)
+
 
 	with open('ansible/hosts', 'r') as f:
 		newlines = []
@@ -133,6 +146,8 @@ def add_cobbler():
 
 
 	copyfiles = ['sudo', 'cp', 'ansible/hosts', '/etc/ansible/']
+	subprocess.call(copyfiles)
+	copyfiles = ['sudo', 'cp', 'ansible/settings', '/etc/ansible/']
 	subprocess.call(copyfiles)
 	copyfiles = ['sudo', 'cp', 'ansible/cloud_install.yml', '/etc/ansible/']
 	subprocess.call(copyfiles)
