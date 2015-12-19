@@ -1,0 +1,14 @@
+---
+- hosts: fedora
+  remote_user: root
+  sudo: yes
+
+vars_files:
+  - /etc/ansible/ansible/group_vars/master.yml
+
+  tasks:
+  - name: Disabling SELinux
+    copy: src=/home/batman/Desktop/cobblerss/config dest=/etc/selinux/config
+
+  - name: reboot the machine
+    command: reboot

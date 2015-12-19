@@ -1,0 +1,103 @@
+---
+- hosts: master
+  
+
+  vars_files:
+  - /etc/ansible/group_vars/master.yml
+
+  tasks:
+
+  
+  - name: test3
+    command: ping {{ IP_Master }} -c 3
+    register: r
+    sudo: yes
+
+  - name: print
+    debug: var=r.stdout
+    sudo: yes
+  
+
+  - name: install opennebula-node
+    apt: name=opennebula-node state=present install_recommends=yes force=yes
+    sudo: yes
+
+  - name: install nfs-common
+    apt: name=nfs-common state=present install_recommends=yes force=yes
+    sudo: yes
+
+  - name: install bridge-utils
+    apt: name=bridge-utils state=present install_recommends=yes force=yes
+    sudo: yes
+
+  - name: add group
+    group: gid={{gid}} name=oneadmin state=present 
+    sudo: yes
+
+  - name: add user
+    user: uid={{uid}} group=oneadmin state=present home=/var/lib/one name=oneadmin password=$5$8dPX1ayI9K9PmzT4$7UTlMPF0V2s8CnQkbfRXQ8dQ19EvnPNFFCRUhe4Oyx5
+    sudo: yes
+
+  - name: check if bridge br0 is present
+    command: brctl show
+    register: output
+    ignore_errors: yes
+    sudo: yes
+
+  - name: add bridge
+    command: brctl addbr br0
+    when: output.stdout.find('br0') == -1
+    sudo: yes
+
+  - name: copying interfaces settings
+    copy: src=/home/batman/Downloads/ready_files/interfaces dest=/etc/network/interfaces
+    sudo: yes
+  
+#  - name: check if the line is imported
+#    command: cat /etc/fstab
+#    register: output2
+#    ignore_errors: yes
+#    sudo: yes
+
+
+#  - name: change ip address to the master node
+#    shell: echo  "{{IP_Master}}:/var/lib/one/  /var/lib/one/  nfs   soft,intr,rsize=8192,wsize=8192,noauto" >> /etc/fstab
+#    when: output2.stdout.find('{{IP_Master}}:/var/lib/one/  /var/lib/one/  nfs   soft,intr,rsize=8192,wsize=8192,noauto') == -1
+#    sudo: yes
+
+
+  - name: mount /var/lib/one/ if it was not 
+    mount: name=/var/lib/one/ src={{IP_Master}}:/var/lib/one/ fstype=nfs opts=soft,intr,rsize=8192,wsize=8192,noauto state=mounted
+    sudo: yes
+
+#  - name: mount /var/lib/one/
+#    command: mount /var/lib/one/
+#    sudo: yes
+
+
+  - name: copy qemu file
+    copy: src=/home/batman/Downloads/ready_files/qemu.conf dest=/etc/libvirt/qemu.conf
+    sudo: yes
+
+
+  - name: restart 
+    service: name=libvirt-bin state=restarted
+    sudo: yes
+
+- name: check if br0 is running
+    command: cat /sys/class/net/eth0/operstate
+    register: output3
+    ignore_errors: yes
+    sudo: yes
+
+  - name: turn bridge onnnnnnnn
+    command: ifup br0
+    when: output3.stdout.find('up') == -1
+    sudo: yes
+
+
+  
+
+
+
+

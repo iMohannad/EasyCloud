@@ -1,0 +1,169 @@
+---
+- hosts: fedora
+
+  vars_files:
+  - /etc/ansible/group_vars/master.yml
+
+  tasks:
+  - name: Disabling SELinux
+    copy: src=config dest=/etc/selinux/config
+    sudo: yes
+
+  - name: enable ssh server
+    command: systemctl enable sshd.service 
+    sudo: yes
+
+  - name: Restart server
+    command: /sbin/shutdown -r 0
+    async: 0
+    poll: 0
+    ignore_errors: true
+    sudo: yes
+
+  - name: wait for the machine to restart
+    local_action:
+     module: wait_for
+      host={{IP_Fedora}}
+      port=22
+      delay=1
+      timeout=1000
+     
+
+
+
+  - name: Disabling SELinux
+    copy: src=config dest=/etc/selinux/config
+    sudo: yes
+
+  - name : install tftp-server
+    yum: name=tftp-server update_cache=yes state=present
+    sudo: yes
+
+  - name : install tftp
+    yum: name=tftp state=present
+    sudo: yes
+
+  - name : install cobbler
+    yum: name=cobbler state=present
+    sudo: yes
+
+  - name : install debmirror
+    yum: name=debmirror state=present
+    sudo: yes
+
+  - name : install dhcp-server
+    yum: name=dhcp state=present
+    sudo: yes
+
+  - name : install xinetd
+    yum: name=xinetd state=present
+    sudo: yes
+
+  - name: Coping settings
+    copy: src=/etc/ansible/settings dest=/etc/cobbler/settings
+    sudo: yes
+
+  - name: Coping dhcp.template
+    copy: src=/etc/ansible/dhcp.template dest=/etc/cobbler/dhcp.template
+    sudo: yes
+
+  - name: Coping dhcp.template
+    copy: src=/etc/ansible/dhcp.template dest=/etc/dhcp/dhcpd.conf
+    sudo: yes
+
+  - name: Coping Ubuntu image
+    copy: src=/etc/ansible/ubuntu-14.04.3-server-amd64.iso dest=/opt/ubuntu-14.04.3-server-amd64.iso
+    sudo: yes
+
+  - name: Run Cobbler service1 start
+    command: systemctl start cobblerd.service
+    sudo: yes
+
+  - name: Run Cobbler service2 enable
+    command: systemctl enable cobblerd.service
+    sudo: yes
+
+  - name: Run Cobbler service3 status
+    command: systemctl status cobblerd.service
+    sudo: yes
+
+  - name : install fence-agents
+    yum: name=fence-agents state=present
+    sudo: yes
+
+  - name: start dhcp stop
+    command: systemctl stop httpd
+    sudo: yes
+
+  - name: start dhcp
+    command: systemctl start httpd
+    sudo: yes
+
+  - name : install get-loaders
+    command: cobbler get-loaders
+    sudo: yes
+
+  - name: start tftp.service
+    command: systemctl start tftp.service
+    sudo: yes
+
+  - name: start xinetd1
+    command: chkconfig --level 345 xinetd on
+    sudo: yes
+
+  - name: start xinetd2
+    command: /sbin/service xinetd start
+    sudo: yes
+
+  - name: Coping iptables
+    copy: src=/etc/ansible/iptables dest=/etc/sysconfig/iptables
+    sudo: yes
+
+#  - name: iptable-restore
+#    shell: iptables-restore < etc/sysconfig/iptables
+#    sudo: yes
+
+  - name: saving iptable
+    command: /sbin/iptables-save
+    sudo: yes
+
+  - name: restart xinetd
+    command: service xinetd restart
+    sudo: yes
+
+  - name: cobbler sync
+    command: cobbler sync
+    sudo: yes
+
+  - name: cobbler restart
+    command: service cobblerd restart
+    sudo: yes
+
+  - name: mount image
+    command: mount -t iso9660 -o loop,ro /opt/ubuntu-14.04.3-server-amd64.iso /mnt
+    sudo: yes
+
+  - name: import image
+    command: cobbler import --name=ubuntu-14.04.3-server-amd64.iso --arch=x86_64 --path=/mnt
+    sudo: yes
+
+  - name: download 14.04 sources.list
+    command: wget https://raw.githubusercontent.com/jameswthorne/default-ubuntu-sources.list/master/trusty-sources.list -O /var/www/html/trusty-sources.list
+    sudo: yes
+
+  - name: copy ubuntu.seed
+    copy: src=/etc/ansible/ubuntu-server-14.04-unattended-cobbler.seed dest=/var/lib/cobbler/kickstarts/ubuntu-server-14.04-unattended-cobbler.seed
+    sudo: yes
+
+  - name: add new cobbler profile
+    command: cobbler profile add --name=ubuntu-14.04.3-server-unattended --distro=ubuntu-14.04.3-server.iso-x86_64 --kickstart=/var/lib/cobbler/kickstarts/ubuntu-server-14.04-unattended-cobbler.seed
+    sudo: yes
+
+  - name: cobbler restart
+    command: service cobblerd restart
+    sudo: yes
+
+  - name: cobbler sync
+    command: cobbler sync
+    sudo: yes
+

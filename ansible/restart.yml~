@@ -1,0 +1,35 @@
+---
+- hosts: easycloud
+  
+
+  vars_files:
+  - /etc/ansible/group_vars/master.yml
+
+  tasks:
+
+
+  - name: reboot pc
+    shell: reboot
+    register: output2
+    ignore_errors: yes
+    sudo: yes
+  
+  - name: Wait for server to restart
+    local_action:
+     module: wait_for
+      host={{IP_Node}}
+      port=22
+      delay=1
+      timeout=1000
+
+  - name: install something
+    apt: name=putty state=present install_recommends=yes force=yes
+    register: output2
+    ignore_errors: yes
+    sudo: yes
+
+  - name: check if the pc is restarted
+    command: ping 172.16.69.58 -c 3
+    register: output2
+    ignore_errors: yes
+    sudo: yes

@@ -1,0 +1,9 @@
+NAME = "net1"
+
+BRIDGE = br0
+
+AR = [
+   TYPE = IP4, 
+   IP = 192.168.100.1,
+   SIZE = 10
+]

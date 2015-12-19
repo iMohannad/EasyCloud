@@ -1,0 +1,14 @@
+
+[master]
+easycloud@172.16.69.57
+
+
+[easycloud]
+easycloud@172.16.69.151
+
+
+[fedora]
+easycloud@172.16.69.209
+
+
+

@@ -1,0 +1,12 @@
+---
+# file: /etc/ansible/group_vars/all
+# this is the site wide default
+IP_Master: 172.16.69.57
+gid: 9869
+uid: 9869
+IP_Node: 172.16.69.151
+IP_Gatway: 0.0.0.0
+Host_MAC: B8:CA:3A:B8:8C:06
+Subnet: 255.255.0.0
+Host_Name: host1
+IP_Fedora: 172.16.69.209

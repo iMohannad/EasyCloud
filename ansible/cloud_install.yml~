@@ -1,0 +1,147 @@
+---
+
+#- hosts: Fedora#
+
+#vars_files:
+#  - /etc/ansible/group_vars/master.yml#
+
+#  tasks:#
+
+#  - name: adding the OS to the new host through cobbler
+#    command: cobbler system add  --name={{Host_Name}}  --mac={{Host_MAC}}  --profile=ubuntu-14.04.3-server-unattended  --hostname={{Host_Name}}  --interface=em1  --ip address={{IP_Node}}  --subnet={{Subnet}}  --gateway={{IP_Gateway}}  --name-servers=8.8.8.8 8.8.4.4  --kopts="interface=em1"
+#    sudo: yes
+#    ignore_errors: yes#
+#
+#
+#
+#
+
+
+- hosts: easycloud
+
+  vars_files:
+  - /etc/ansible/group_vars/master.yml
+
+  tasks:
+
+#  - name: Wait for Computer to start 
+#    local_action:
+#     module: wait_for
+#      host={{IP_Node}}
+#      port=22
+#      delay=1
+#      timeout=1000
+
+
+  - name: install qemu-kvm
+    apt: name=qemu-kvm state=present install_recommends=yes force=yes
+    sudo: yes
+
+  - name: install opennebula-node
+    apt: name=opennebula-node state=present update_cache=yes install_recommends=yes force=yes
+    sudo: yes
+
+  - name: install nfs-common
+    apt: name=nfs-common state=present install_recommends=yes force=yes
+    sudo: yes
+
+  - name: install bridge-utils
+    apt: name=bridge-utils state=present install_recommends=yes force=yes
+    sudo: yes
+
+  - name: add group
+    group: gid={{gid}} name=oneadmin state=present
+    sudo: yes
+
+  - name: add user
+    user: uid={{uid}} group=oneadmin state=present home=/var/lib/one name=oneadmin
+    sudo: yes
+
+
+  - name: check if bridge br0 is present
+    command: brctl show
+    register: output
+    ignore_errors: yes
+    sudo: yes
+
+  - name: add bridge
+    command: brctl addbr br0
+    when: output.stdout.find('br0') == -1
+    sudo: yes
+
+  - name: copying interfaces settings
+    copy: src=/etc/ansible/interfaces dest=/etc/network/interfaces
+    sudo: yes
+
+
+
+#  - name: add bridge em1
+#    command: brctl addif br0 em1
+#    sudo: yes
+
+
+  - name: check if the line is imported
+    command: cat /etc/fstab
+    register: output2
+    ignore_errors: yes
+    sudo: yes
+
+
+  - name: mount /var/lib/one/ if it was not 
+    mount: name=/var/lib/one/ src={{IP_Master}}:/var/lib/one/ fstype=nfs opts=soft,intr,rsize=8192,wsize=8192,noauto state=mounted
+    sudo: yes
+
+  - name: copy qemu file
+    copy: src=/etc/ansible/qemu.conf dest=/etc/libvirt/qemu.conf
+    sudo: yes
+
+  - name: restart 
+    service: name=libvirt-bin state=restarted
+    sudo: yes
+
+
+  - name: check if br0 is running
+    command: cat /sys/class/net/em1/operstate
+    register: output3
+    ignore_errors: yes
+    sudo: yes
+
+  - name: turn bridge onnnnnnnn
+    command: ifup br0
+    when: output3.stdout.find('up') == -1
+    sudo: yes
+
+
+
+- hosts: 127.0.0.1
+  connection: local
+
+  vars_files:
+  - /etc/ansible/group_vars/master.yml
+
+  tasks:
+
+
+  - name: check if host is added
+    shell:  su - oneadmin & onehost list
+    register: output4
+    ignore_errors: yes
+    sudo: yes
+
+  - name: add new node
+    shell: su - oneadmin & onehost create {{IP_Node}} -i kvm -v kvm -n dummy
+    when: output4.stdout.find('{{IP_Node}}') == -1
+    sudo: yes
+
+
+
+
+
+
+
+
+  
+
+
+
+

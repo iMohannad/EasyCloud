@@ -1,0 +1,23 @@
+---
+- hosts: shella
+  
+
+  tasks:
+  - name : install mpg123
+    apt: name=mpg123 state=present install_recommends=yes force=yes
+    sudo: yes
+
+  - name : copy song
+    copy: src=/home/batman/Downloads/leanon.mp3 dest=/home/batman/Downloads/leanon.mp3
+    sudo: yes
+
+  - name: play song
+    pause: seconds=3
+    
+    
+
+  - name: play song
+    command: mpg123 /home/batman/Downloads/leanon.mp3  -f 10
+    async: 30
+    poll: 0
+    

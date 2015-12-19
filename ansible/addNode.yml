@@ -1,0 +1,37 @@
+---
+
+- hosts: fedora
+
+  vars_files:
+    - /etc/ansible/group_vars/master.yml
+
+  tasks:
+
+  - name: adding the OS to the new host through cobbler
+    command: cobbler system add  --name={{Host_Name}}  --mac={{Host_MAC}}  --profile=ubuntu-14.04.3-server-unattended  --hostname={{Host_Name}}  --interface=em1  --ip-address={{IP_Node}} --netmask={{Subnet}}    
+    sudo: yes
+    ignore_errors: yes
+
+  - name: sync cobbler
+    command: cobbler sync    
+    sudo: yes
+    ignore_errors: yes
+
+
+- hosts: 127.0.0.1
+  connection: local
+ 
+  vars_files:
+    - /etc/ansible/group_vars/master.yml
+
+  tasks:
+    - name: Wait for new node to start 
+      local_action:
+        module: wait_for
+          host={{IP_Node}}
+          port=22
+          delay=1
+          timeout=1000
+
+
+
